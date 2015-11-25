@@ -6,7 +6,7 @@
     "homepage": "https://github.com/barracudanetworks/SMTP-Validate-Email",
     "license": "Creative Commons v2.0",
     "require": {
-        "php": ">=5.3.*",
+        "php": ">=5.3.*"
     },
     "autoload": {
 		"psr-4": {
