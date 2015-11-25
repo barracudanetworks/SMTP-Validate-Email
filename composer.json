@@ -1,0 +1,16 @@
+{
+    "name": "barracudanetworks/smtp-validate-email",
+    "type": "library",
+    "description": "A library for determining if an email or set of emails is valid and has an actual mailbox.",
+    "keywords": ["php", "email", "validation"],
+    "homepage": "https://github.com/barracudanetworks/SMTP-Validate-Email",
+    "license": "Creative Commons v2.0",
+    "require": {
+        "php": ">=5.3.*",
+    },
+    "autoload": {
+		"psr-4": {
+			"Barracuda\\": "src/"
+		}
+	}
+}
