@@ -67,14 +67,14 @@ class SMTPValidateEmail
 	 *
 	 * @var string
 	 */
-	protected $from_user = 'noreply';
+	protected $from_user = '';
 
 	/**
 	 * Host Name of sender
 	 *
 	 * @var string
 	 */
-	protected $from_domain = 'cudadrive.com';
+	protected $from_domain = '';
 
 	/**
 	 * Nameservers to use when make DNS query for MX entries
@@ -98,7 +98,7 @@ class SMTPValidateEmail
 	 * @param array $emails Array containing emails
 	 * @param string $sender String[optional] Email of validator
 	 */
-	function __construct($emails = false, $sender = false)
+	public function __construct($emails = false, $sender = false)
 	{
 		if ($emails)
 		{
@@ -149,7 +149,7 @@ class SMTPValidateEmail
 	 *
 	 * @param $email String
 	 */
-	function setSenderEmail($email)
+	public function setSenderEmail($email)
 	{
 		$parts = $this->_parseEmail($email);
 		$this->from_user = $parts[0];
@@ -163,7 +163,7 @@ class SMTPValidateEmail
 	 * @param string $sender Sender's Email
 	 * @return array Associative List of Emails and their validation results
 	 */
-	function validate(array $emails = null, $sender = false)
+	public function validate(array $emails = null, $sender = false)
 	{
 		$results = array();
 
@@ -230,22 +230,22 @@ class SMTPValidateEmail
 					// MTA gave an error...
 					foreach($users as $user)
 					{
-						$results[$user.'@'.$domain] = false;
+						$results[$user . '@' . $domain] = false;
 					}
 
 					continue;
 				}
 
 				// say hello
-				$this->send("HELO ".$this->from_domain);
+				$this->send("HELO " . $this->from_domain);
 				// tell of sender
-				$this->send("MAIL FROM: <".$this->from_user.'@'.$this->from_domain.">");
+				$this->send("MAIL FROM: <" . $this->from_user . '@' . $this->from_domain . ">");
 
 				// ask for each recepient on this domain
 				foreach ($users as $user)
 				{
 					// ask of recepient
-					$reply = $this->send("RCPT TO: <".$user.'@'.$domain.">");
+					$reply = $this->send("RCPT TO: <" . $user . '@' . $domain . ">");
 
 					// get code and msg from response
 					preg_match('/^([0-9]{3}) /ims', $reply, $matches);
@@ -254,16 +254,16 @@ class SMTPValidateEmail
 					if ($code == '250')
 					{
 						// you received 250 so the email address was accepted
-						$results[$user.'@'.$domain] = true;
+						$results[$user . '@' . $domain] = true;
 					}
 					elseif ($code == '451' || $code == '452')
 					{
 						// you received 451 so the email address was greylisted (or some temporary error occured on the MTA) - so assume is ok
-						$results[$user.'@'.$domain] = true;
+						$results[$user . '@' . $domain] = true;
 					}
 					else
 					{
-						$results[$user.'@'.$domain] = false;
+						$results[$user . '@' . $domain] = false;
 					}
 				}
 
@@ -278,7 +278,7 @@ class SMTPValidateEmail
 			}
 			else
 			{
-				$this->debug('Error: Could not connect to a valid mail server for this email address: ' . $user.'@'.$domain);
+				$this->debug('Error: Could not connect to a valid mail server for this email address: ' . $user . '@' . $domain);
 			}
 		}
 
@@ -293,7 +293,7 @@ class SMTPValidateEmail
 	 */
 	public function send($msg)
 	{
-		fwrite($this->sock, $msg."\r\n");
+		fwrite($this->sock, $msg . "\r\n");
 
 		$reply = fread($this->sock, 2082);
 
@@ -349,7 +349,7 @@ class SMTPValidateEmail
 	 *
 	 * @return float
 	 */
-	function microtime_float()
+	public function microtime_float()
 	{
 		list($usec, $sec) = explode(" ", microtime());
 		return ((float)$usec + (float)$sec);
@@ -360,11 +360,11 @@ class SMTPValidateEmail
 	 *
 	 * @param string $str
 	 */
-	function debug($str)
+	public function debug($str)
 	{
 		if ($this->debug)
 		{
-			echo '<pre>'.htmlentities($str).'</pre>';
+			echo '<pre>' . htmlentities($str) . '</pre>';
 		}
 	}
 }
