@@ -160,7 +160,7 @@ class SMTPValidateEmail
 	 * Validate Email Addresses
 	 *
 	 * @param array $emails Emails to validate (recipient emails)
-	 * @param string $sender Sender's Email
+	 * @param string|boolean $sender Sender's Email
 	 * @return array Associative List of Emails and their validation results
 	 */
 	public function validate(array $emails = null, $sender = false)
@@ -180,6 +180,12 @@ class SMTPValidateEmail
 		// query the MTAs on each Domain
 		foreach($this->domains as $domain=>$users)
 		{
+			// Set a default of false and validate as true later.
+			foreach($users as $user)
+			{
+				$results[$user . '@' . $domain] = false;
+			}
+
 			$mxs = array();
 
 			// current domain being queried
@@ -212,73 +218,70 @@ class SMTPValidateEmail
 				if ($this->sock = fsockopen($host, $this->port, $errno, $errstr, (float) $timeout))
 				{
 					stream_set_timeout($this->sock, $this->max_read_time);
-					break;
-				}
-			}
-
-			// did we get a TCP socket
-			if ($this->sock)
-			{
-				$reply = fread($this->sock, 2082);
-				$this->debug("<<<\n$reply");
-
-				preg_match('/^([0-9]{3}) /ims', $reply, $matches);
-				$code = isset($matches[1]) ? $matches[1] : '';
-
-				if($code != '220')
-				{
-					// MTA gave an error...
-					foreach($users as $user)
-					{
-						$results[$user . '@' . $domain] = false;
-					}
-
-					continue;
 				}
 
-				// say hello
-				$this->send("HELO " . $this->from_domain);
-				// tell of sender
-				$this->send("MAIL FROM: <" . $this->from_user . '@' . $this->from_domain . ">");
-
-				// ask for each recepient on this domain
-				foreach ($users as $user)
+				// did we get a TCP socket
+				if ($this->sock)
 				{
-					// ask of recepient
-					$reply = $this->send("RCPT TO: <" . $user . '@' . $domain . ">");
+					$reply = fread($this->sock, 2082);
+					$this->debug("<<<\n$reply");
 
-					// get code and msg from response
 					preg_match('/^([0-9]{3}) /ims', $reply, $matches);
 					$code = isset($matches[1]) ? $matches[1] : '';
 
-					if ($code == '250')
+					if($code != '220')
 					{
-						// you received 250 so the email address was accepted
-						$results[$user . '@' . $domain] = true;
+						// We did not connect with this host. Try another.
+						continue;
 					}
-					elseif ($code == '451' || $code == '452')
+
+					// say hello
+					$this->send("HELO " . $this->from_domain);
+					// tell of sender
+					$this->send("MAIL FROM: <" . $this->from_user . '@' . $this->from_domain . ">");
+
+					// ask for each recipient on this domain
+					foreach ($users as $user)
 					{
-						// you received 451 so the email address was greylisted (or some temporary error occured on the MTA) - so assume is ok
-						$results[$user . '@' . $domain] = true;
+						// ask of recipient
+						$reply = $this->send("RCPT TO: <" . $user . '@' . $domain . ">");
+
+						// get code and msg from response
+						preg_match('/^([0-9]{3}) /ims', $reply, $matches);
+						$code = isset($matches[1]) ? $matches[1] : '';
+
+						if ($code == '250')
+						{
+							// you received 250 so the email address was accepted
+							$results[$user . '@' . $domain] = true;
+						}
+						elseif ($code == '451' || $code == '452')
+						{
+							// you received 451 so the email address was grey-listed (or some temporary error occurred on the MTA) - so assume is ok
+							$results[$user . '@' . $domain] = true;
+						}
+						elseif ($code == '550')
+						{
+							// Error produced from connection.
+							continue 2;
+						}
 					}
-					else
-					{
-						$results[$user . '@' . $domain] = false;
-					}
+
+					// reset before quit
+					$this->send("RSET");
+
+					// quit
+					$this->send("quit");
+					// close socket
+					fclose($this->sock);
+				}
+				else
+				{
+				    $this->debug('Error: Could not connect to a valid mail server for this email domain: ' . $domain);
 				}
 
-				// reset before quit
-				$this->send("RSET");
-
-				// quit
-				$this->send("quit");
-				// close socket
-				fclose($this->sock);
-
-			}
-			else
-			{
-				$this->debug('Error: Could not connect to a valid mail server for this email address: ' . $user . '@' . $domain);
+				// By this point we would have skipped a few iterations if there was an issue. If we are here, then we got the correct answers.
+				break;
 			}
 		}
 
