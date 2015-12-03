@@ -278,7 +278,7 @@ class SMTPValidateEmail
 			}
 			else
 			{
-				$this->debug('Error: Could not connect to a valid mail server for this email address: ' . $user . '@' . $domain);
+			    $this->debug('Error: Could not connect to a valid mail server for this email domain: ' . $domain);
 			}
 		}
 
