@@ -209,7 +209,7 @@ class SMTPValidateEmail
 				// connect to SMTP server
 				$this->debug("try $host:$this->port\n");
 
-				if ($this->sock = fsockopen($host, $this->port, $errno, $errstr, (float) $timeout))
+				if ($this->sock = @fsockopen($host, $this->port, $errno, $errstr, (float) $timeout))
 				{
 					stream_set_timeout($this->sock, $this->max_read_time);
 					break;
